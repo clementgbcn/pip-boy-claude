@@ -15,6 +15,7 @@ _HISTORY_FILE = os.path.expanduser("~/.pipboy/history")
 
 from ._colors import AM, BG, DG, G, R
 from .claude import stream_claude
+from .log import LOG_FILE, append_turn, total_turns
 from .stats import ConvoStats
 from .ui import boot_sequence, close_response_box, divider, open_response_box, print_header, print_tabs, print_user_msg, show_help, show_stat, write_chunk
 
@@ -73,7 +74,8 @@ def main() -> None:
                 print_tabs("CHAT")
                 divider()
             case "log":
-                print(f"\n{G}  Conversation turns: {BG}{turn}{R}\n")
+                total = total_turns()
+                print(f"\n{G}  Session turns: {BG}{turn}{G}  |  Total logged: {BG}{total}{G}  |  Log: {DG}{LOG_FILE}{R}\n")
                 divider()
             case "clear":
                 turn = 0
@@ -124,4 +126,5 @@ def main() -> None:
                 elif not response.startswith(("[FATAL]", "[SYSTEM ERROR]")):
                     turn += 1
                     convo_stats.record(raw, response, elapsed)
+                    append_turn(raw, response, elapsed)
                 divider()
