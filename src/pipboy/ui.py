@@ -2,7 +2,6 @@
 
 import shutil
 import sys
-import textwrap
 import time
 from datetime import datetime
 
@@ -98,33 +97,24 @@ def boot_sequence() -> None:
     divider()
 
 
-def typewrite(text: str, delay: float = 0.008) -> None:
-    for ch in text:
-        sys.stdout.write(ch)
-        sys.stdout.flush()
-        if ch not in (" ", "\n"):
-            time.sleep(delay)
-    print()
-
-
-def render_response(text: str) -> list[str]:
-    max_w = terminal_width() - 6
-    lines: list[str] = []
-    for para in text.split("\n"):
-        if para.strip():
-            lines.extend(textwrap.wrap(para, max_w) or [""])
-        else:
-            lines.append("")
-    return lines
-
-
-def print_ai_response(text: str) -> None:
+def open_response_box() -> None:
     ts = datetime.now().strftime("%H:%M:%S")
     print(f"\n{G}  ┌─[ {BG}CLAUDE-BOY{G} ]─[ {DG}{ts}{G} ]{R}")
-    for line in render_response(text):
-        print(f"{G}  │ {R}", end="")
-        typewrite(f"{G}{line}{R}", delay=0.006)
-    print(f"{G}  └{'─' * (terminal_width() - 4)}{R}\n")
+    sys.stdout.write(f"{G}  │ {R}")
+    sys.stdout.flush()
+
+
+def write_chunk(chunk: str) -> None:
+    for ch in chunk:
+        if ch == "\n":
+            sys.stdout.write(f"\n{G}  │ {R}")
+        else:
+            sys.stdout.write(ch)
+    sys.stdout.flush()
+
+
+def close_response_box() -> None:
+    print(f"\n{G}  └{'─' * (terminal_width() - 4)}{R}\n")
 
 
 def print_user_msg(text: str) -> None:

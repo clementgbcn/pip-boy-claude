@@ -1,6 +1,6 @@
 """Main entry point – the Pip-Boy interactive loop."""
 
-import itertools
+import queue
 import select
 import signal
 import sys
@@ -8,12 +8,11 @@ import termios
 import threading
 import time
 import tty
-from concurrent.futures import ThreadPoolExecutor
 
 from ._colors import AM, BG, DG, G, R
-from .claude import call_claude
+from .claude import stream_claude
 from .stats import ConvoStats
-from .ui import boot_sequence, divider, print_ai_response, print_header, print_tabs, print_user_msg, show_help, show_stat
+from .ui import boot_sequence, close_response_box, divider, open_response_box, print_header, print_tabs, print_user_msg, show_help, show_stat, write_chunk
 
 
 def main() -> None:
@@ -59,32 +58,46 @@ def main() -> None:
             case _:
                 print_user_msg(raw)
                 stop_event = threading.Event()
-                with ThreadPoolExecutor(max_workers=1) as executor:
-                    future = executor.submit(call_claude, raw, turn == 0, stop_event)
-                    interrupted = False
-                    old_settings = termios.tcgetattr(sys.stdin)
-                    try:
-                        tty.setcbreak(sys.stdin.fileno())
-                        for symbol in itertools.cycle("|/─\\"):
-                            sys.stdout.write(f"\r{DG}  [ PROCESSING {symbol} · any key to stop ]{R}")
-                            sys.stdout.flush()
-                            if select.select([sys.stdin], [], [], 0.12)[0]:
-                                sys.stdin.read(1)
-                                stop_event.set()
-                                interrupted = True
+                chunk_q: queue.Queue[str | None] = queue.Queue()
+
+                def _produce(msg: str = raw, ft: bool = (turn == 0)) -> None:
+                    for chunk in stream_claude(msg, ft, stop_event):
+                        chunk_q.put(chunk)
+                    chunk_q.put(None)
+
+                threading.Thread(target=_produce, daemon=True).start()
+                open_response_box()
+
+                full_text: list[str] = []
+                interrupted = False
+                t0 = time.monotonic()
+                old_settings = termios.tcgetattr(sys.stdin)
+                try:
+                    tty.setcbreak(sys.stdin.fileno())
+                    while True:
+                        if select.select([sys.stdin], [], [], 0)[0]:
+                            sys.stdin.read(1)
+                            stop_event.set()
+                            interrupted = True
+                            break
+                        try:
+                            chunk = chunk_q.get(timeout=0.05)
+                            if chunk is None:
                                 break
-                            if future.done():
-                                break
-                    finally:
-                        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
-                    sys.stdout.write(f"\r{' ' * 46}\r")
-                    response, elapsed = future.result()
+                            full_text.append(chunk)
+                            write_chunk(chunk)
+                        except queue.Empty:
+                            pass
+                finally:
+                    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+                    close_response_box()
+
+                elapsed = time.monotonic() - t0
+                response = "".join(full_text)
+
                 if interrupted:
                     print(f"\n{DG}  [ TRANSMISSION ABORTED — SIGNAL LOST IN THE WASTELAND ]{R}\n")
-                elif response.startswith(("[FATAL]", "[SYSTEM ERROR]")):
-                    print(f"\n{AM}  {response}{R}\n")
-                else:
+                elif not response.startswith(("[FATAL]", "[SYSTEM ERROR]")):
                     turn += 1
                     convo_stats.record(raw, response, elapsed)
-                    print_ai_response(response)
                 divider()
