@@ -1,0 +1,45 @@
+# Build / distribution
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Claude #
+##########
+**/.claude/*.local.*
+CLAUDE.local.md
+claude.local.md
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Installer / packaging tools
+.hatch/
+pip-wheel-metadata/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Type checkers
+.mypy_cache/
+.ruff_cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# macOS
+.DS_Store

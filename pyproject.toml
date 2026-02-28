@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pipboy"
+version = "0.1.0"
+description = "Pip-Boy 3000 Mk IV — Fallout-themed terminal interface for Claude AI"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [{ name = "Clement Gaborieau-Couanau" }]
+keywords = ["fallout", "pip-boy", "claude", "ai", "terminal", "cli"]
+classifiers = [
+    "Environment :: Console",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Utilities",
+]
+
+[project.scripts]
+pipboy = "pipboy.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pipboy"]
