@@ -97,7 +97,12 @@ def boot_sequence() -> None:
     divider()
 
 
+_response_col = 0
+
+
 def open_response_box() -> None:
+    global _response_col
+    _response_col = 0
     ts = datetime.now().strftime("%H:%M:%S")
     sys.stdout.write(HC)
     print(f"\n{G}  ┌─[ {BG}CLAUDE-BOY{G} ]─[ {DG}{ts}{G} ]{R}")
@@ -106,11 +111,18 @@ def open_response_box() -> None:
 
 
 def write_chunk(chunk: str) -> None:
+    global _response_col
+    w = terminal_width() - 4
     for ch in chunk:
         if ch == "\n":
             sys.stdout.write(f"\n{G}  │ {R}")
+            _response_col = 0
         else:
             sys.stdout.write(ch)
+            _response_col += 1
+            if _response_col >= w:
+                sys.stdout.write(f"\n{G}  │ {R}")
+                _response_col = 0
     sys.stdout.flush()
 
 
@@ -122,7 +134,7 @@ def close_response_box(interrupted: bool = False) -> None:
         footer = label + "─" * (w - len(label))
     else:
         footer = "─" * w
-    print(f"\n{G}  └{footer}{R}\n")
+    print(f"\n{G}  └{footer}{R}\n\n")
 
 
 def print_user_msg(text: str) -> None:
