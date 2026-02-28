@@ -1,9 +1,13 @@
 """Main entry point – the Pip-Boy interactive loop."""
 
 import itertools
+import select
 import signal
 import sys
+import termios
+import threading
 import time
+import tty
 from concurrent.futures import ThreadPoolExecutor
 
 from ._colors import AM, BG, DG, G, R
@@ -54,17 +58,30 @@ def main() -> None:
                 boot_sequence()
             case _:
                 print_user_msg(raw)
+                stop_event = threading.Event()
                 with ThreadPoolExecutor(max_workers=1) as executor:
-                    future = executor.submit(call_claude, raw, turn == 0)
-                    for symbol in itertools.cycle("|/─\\"):
-                        sys.stdout.write(f"\r{DG}  [ PROCESSING {symbol} ]{R}")
-                        sys.stdout.flush()
-                        time.sleep(0.12)
-                        if future.done():
-                            break
-                    sys.stdout.write(f"\r{' ' * 26}\r")
+                    future = executor.submit(call_claude, raw, turn == 0, stop_event)
+                    interrupted = False
+                    old_settings = termios.tcgetattr(sys.stdin)
+                    try:
+                        tty.setcbreak(sys.stdin.fileno())
+                        for symbol in itertools.cycle("|/─\\"):
+                            sys.stdout.write(f"\r{DG}  [ PROCESSING {symbol} · any key to stop ]{R}")
+                            sys.stdout.flush()
+                            if select.select([sys.stdin], [], [], 0.12)[0]:
+                                sys.stdin.read(1)
+                                stop_event.set()
+                                interrupted = True
+                                break
+                            if future.done():
+                                break
+                    finally:
+                        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+                    sys.stdout.write(f"\r{' ' * 46}\r")
                     response, elapsed = future.result()
-                if response.startswith(("[FATAL]", "[SYSTEM ERROR]")):
+                if interrupted:
+                    print(f"\n{DG}  [ TRANSMISSION ABORTED — SIGNAL LOST IN THE WASTELAND ]{R}\n")
+                elif response.startswith(("[FATAL]", "[SYSTEM ERROR]")):
                     print(f"\n{AM}  {response}{R}\n")
                 else:
                     turn += 1

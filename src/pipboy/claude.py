@@ -2,10 +2,18 @@
 
 import json
 import subprocess
+import threading
 import time
 
 
-def call_claude(message: str, first_turn: bool = True) -> tuple[str, float]:
+_FALLOUT_SUFFIX = (
+    " [Respond in the style of a Pip-Boy AI from the Fallout universe: "
+    "terse, slightly ironic, post-apocalyptic tone. Use Vault-Tec jargon "
+    "and occasional radiation/wasteland metaphors. Keep it brief.]"
+)
+
+
+def call_claude(message: str, first_turn: bool = True, stop_event: threading.Event | None = None) -> tuple[str, float]:
     """Invoke the Claude CLI and return (response_text, elapsed_seconds).
 
     Uses ``--continue`` on every turn after the first so that the conversation
@@ -14,7 +22,7 @@ def call_claude(message: str, first_turn: bool = True) -> tuple[str, float]:
     cmd = ["claude", "-p", "--verbose", "--output-format", "stream-json"]
     if not first_turn:
         cmd.append("--continue")
-    cmd.append(message)
+    cmd.append(message + (_FALLOUT_SUFFIX if first_turn else ""))
 
     t0 = time.monotonic()
     try:
@@ -25,7 +33,12 @@ def call_claude(message: str, first_turn: bool = True) -> tuple[str, float]:
             text=True,
         )
         chunks: list[str] = []
+        interrupted = False
         for raw in proc.stdout:  # type: ignore[union-attr]
+            if stop_event is not None and stop_event.is_set():
+                proc.terminate()
+                interrupted = True
+                break
             raw = raw.strip()
             if not raw:
                 continue
@@ -44,6 +57,8 @@ def call_claude(message: str, first_turn: bool = True) -> tuple[str, float]:
                 pass
         proc.wait()
         elapsed = time.monotonic() - t0
+        if interrupted:
+            return "[INTERRUPTED]", elapsed
         if proc.returncode != 0:
             err = proc.stderr.read()  # type: ignore[union-attr]
             return f"[SYSTEM ERROR] {err.strip() or 'Unknown error'}", elapsed
