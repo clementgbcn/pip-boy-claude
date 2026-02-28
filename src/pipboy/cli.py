@@ -1,6 +1,8 @@
 """Main entry point – the Pip-Boy interactive loop."""
 
+import os
 import queue
+import readline
 import select
 import signal
 import sys
@@ -9,6 +11,8 @@ import threading
 import time
 import tty
 
+_HISTORY_FILE = os.path.expanduser("~/.pipboy/history")
+
 from ._colors import AM, BG, DG, G, R
 from .claude import stream_claude
 from .stats import ConvoStats
@@ -16,7 +20,15 @@ from .ui import boot_sequence, close_response_box, divider, open_response_box, p
 
 
 def main() -> None:
+    os.makedirs(os.path.dirname(_HISTORY_FILE), exist_ok=True)
+    try:
+        readline.read_history_file(_HISTORY_FILE)
+    except FileNotFoundError:
+        pass
+    readline.set_history_length(500)
+
     def _exit(*_: object) -> None:
+        readline.write_history_file(_HISTORY_FILE)
         print(f"\n\n{G}  {BG}POWERING DOWN PIP-BOY...{G}")
         print(f"  STAY SAFE OUT THERE, VAULT DWELLER.{R}\n")
         sys.exit(0)
