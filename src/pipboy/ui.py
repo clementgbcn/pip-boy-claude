@@ -99,6 +99,7 @@ def boot_sequence() -> None:
 
 def open_response_box() -> None:
     ts = datetime.now().strftime("%H:%M:%S")
+    sys.stdout.write(HC)
     print(f"\n{G}  ┌─[ {BG}CLAUDE-BOY{G} ]─[ {DG}{ts}{G} ]{R}")
     sys.stdout.write(f"{G}  │ {R}")
     sys.stdout.flush()
@@ -114,6 +115,7 @@ def write_chunk(chunk: str) -> None:
 
 
 def close_response_box() -> None:
+    sys.stdout.write(SC)
     print(f"\n{G}  └{'─' * (terminal_width() - 4)}{R}\n")
 
 
