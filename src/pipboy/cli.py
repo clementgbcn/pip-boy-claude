@@ -27,18 +27,30 @@ def main() -> None:
         pass
     readline.set_history_length(500)
 
+    _needs_redraw = False
+
     def _exit(*_: object) -> None:
         readline.write_history_file(_HISTORY_FILE)
         print(f"\n\n{G}  {BG}POWERING DOWN PIP-BOY...{G}")
         print(f"  STAY SAFE OUT THERE, VAULT DWELLER.{R}\n")
         sys.exit(0)
 
+    def _handle_resize(*_: object) -> None:
+        nonlocal _needs_redraw
+        _needs_redraw = True
+
     signal.signal(signal.SIGINT, _exit)
+    signal.signal(signal.SIGWINCH, _handle_resize)
     boot_sequence()
     turn = 0
     convo_stats = ConvoStats()
 
     while True:
+        if _needs_redraw:
+            _needs_redraw = False
+            print_header()
+            print_tabs("CHAT")
+            divider()
         try:
             raw = input(f"{BG}  >> {R}").strip()
         except EOFError:
