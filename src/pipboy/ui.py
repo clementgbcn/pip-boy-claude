@@ -18,7 +18,6 @@ LOGO = [
     r" ╚═╝     ╚═╝╚═╝           ╚═════╝  ╚═════╝    ╚═╝   ",
 ]
 
-BORDER_W = 60
 
 BOOT_MSGS: list[tuple[str, float]] = [
     ("ROBCO INDUSTRIES UNIFIED OPERATING SYSTEM", 0.04),
@@ -52,22 +51,23 @@ def _center(s: str) -> str:
 
 
 def _border_row(s: str) -> str:
-    return "║" + s.center(BORDER_W - 2) + "║"
+    return "║" + s.center(terminal_width() - 2) + "║"
 
 
 def divider() -> None:
-    print(f"{G}{'─' * min(terminal_width(), BORDER_W)}{R}")
+    print(f"{G}{'─' * terminal_width()}{R}")
 
 
 def print_header() -> None:
+    w = terminal_width()
     print(f"{BG}{B}")
-    print(_center("╔" + "═" * (BORDER_W - 2) + "╗"))
+    print("╔" + "═" * (w - 2) + "╗")
     for line in LOGO:
-        print(_center(_border_row(line)))
-    print(_center("╠" + "═" * (BORDER_W - 2) + "╣"))
-    print(_center(_border_row("VAULT-TEC INDUSTRIES  ·  PIP-BOY 3000 MARK IV")))
-    print(_center(_border_row("ROBCO CERTIFIED™  ·  AI COMPANION UNIT")))
-    print(_center("╚" + "═" * (BORDER_W - 2) + "╝"))
+        print(_border_row(line))
+    print("╠" + "═" * (w - 2) + "╣")
+    print(_border_row("VAULT-TEC INDUSTRIES  ·  PIP-BOY 3000 MARK IV"))
+    print(_border_row("ROBCO CERTIFIED™  ·  AI COMPANION UNIT"))
+    print("╚" + "═" * (w - 2) + "╝")
     print(R)
 
 
@@ -108,7 +108,7 @@ def typewrite(text: str, delay: float = 0.008) -> None:
 
 
 def render_response(text: str) -> list[str]:
-    max_w = min(terminal_width() - 6, 76)
+    max_w = terminal_width() - 6
     lines: list[str] = []
     for para in text.split("\n"):
         if para.strip():
@@ -124,14 +124,14 @@ def print_ai_response(text: str) -> None:
     for line in render_response(text):
         print(f"{G}  │ {R}", end="")
         typewrite(f"{G}{line}{R}", delay=0.006)
-    print(f"{G}  └{'─' * 40}{R}\n")
+    print(f"{G}  └{'─' * (terminal_width() - 4)}{R}\n")
 
 
 def print_user_msg(text: str) -> None:
     ts = datetime.now().strftime("%H:%M:%S")
     print(f"\n{BG}  ┌─[ DWELLER ]─[ {DG}{ts}{BG} ]{R}")
     print(f"{BG}  │ {text}{R}")
-    print(f"{BG}  └{'─' * 40}{R}")
+    print(f"{BG}  └{'─' * (terminal_width() - 4)}{R}")
 
 
 def show_stat(convo_stats: ConvoStats, turns: int) -> None:
