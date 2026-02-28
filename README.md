@@ -66,7 +66,6 @@ Or without installing:
 
 ```bash
 python -m pipboy        # from the repo root after pip install -e .
-python pipboy_standalone.py   # run the legacy single-file script directly
 ```
 
 ### In-session commands
@@ -96,7 +95,6 @@ pip-boy-claude/
 │       ├── ui.py           # all terminal rendering
 │       ├── claude.py       # Claude CLI subprocess bridge
 │       └── cli.py          # main() interactive loop
-├── pipboy_standalone.py    # legacy single-file script (superseded by package)
 ├── pyproject.toml
 ├── LICENSE
 └── README.md
