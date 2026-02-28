@@ -114,9 +114,15 @@ def write_chunk(chunk: str) -> None:
     sys.stdout.flush()
 
 
-def close_response_box() -> None:
+def close_response_box(interrupted: bool = False) -> None:
     sys.stdout.write(SC)
-    print(f"\n{G}  └{'─' * (terminal_width() - 4)}{R}\n")
+    w = terminal_width() - 4
+    if interrupted:
+        label = "─ SIGNAL LOST "
+        footer = label + "─" * (w - len(label))
+    else:
+        footer = "─" * w
+    print(f"\n{G}  └{footer}{R}\n")
 
 
 def print_user_msg(text: str) -> None:

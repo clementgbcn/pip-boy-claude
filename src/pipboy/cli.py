@@ -117,16 +117,15 @@ def main() -> None:
                             pass
                 finally:
                     termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
-                    close_response_box()
+                    close_response_box(interrupted)
 
                 elapsed = time.monotonic() - t0
                 response = "".join(full_text)
 
-                if interrupted:
-                    print(f"\n{DG}  [ TRANSMISSION ABORTED — SIGNAL LOST IN THE WASTELAND ]{R}\n")
-                elif not response.startswith(("[FATAL]", "[SYSTEM ERROR]")):
+                if not response.startswith(("[FATAL]", "[SYSTEM ERROR]")) and response:
                     turn += 1
                     convo_stats.record(raw, response, elapsed)
                     convo_stats.save()
-                    append_turn(raw, response, elapsed)
+                    if not interrupted:
+                        append_turn(raw, response, elapsed)
                 divider()
