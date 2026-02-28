@@ -32,6 +32,7 @@ def main() -> None:
 
     def _exit(*_: object) -> None:
         readline.write_history_file(_HISTORY_FILE)
+        convo_stats.save()
         print(f"\n\n{G}  {BG}POWERING DOWN PIP-BOY...{G}")
         print(f"  STAY SAFE OUT THERE, VAULT DWELLER.{R}\n")
         sys.exit(0)
@@ -44,7 +45,7 @@ def main() -> None:
     signal.signal(signal.SIGWINCH, _handle_resize)
     boot_sequence()
     turn = 0
-    convo_stats = ConvoStats()
+    convo_stats = ConvoStats.load()
 
     while True:
         if _needs_redraw:
@@ -126,5 +127,6 @@ def main() -> None:
                 elif not response.startswith(("[FATAL]", "[SYSTEM ERROR]")):
                     turn += 1
                     convo_stats.record(raw, response, elapsed)
+                    convo_stats.save()
                     append_turn(raw, response, elapsed)
                 divider()

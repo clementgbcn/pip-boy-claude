@@ -1,10 +1,13 @@
 """Conversation metrics tracker and S.P.E.C.I.A.L stat computation."""
 
+import json
+import os
 import re
 
 from ._colors import AM, BG
 
 _StatRow = tuple[str, str, int, str]
+_STATS_FILE = os.path.expanduser("~/.pipboy/stats.json")
 
 
 class ConvoStats:
@@ -26,6 +29,34 @@ class ConvoStats:
 
     def reset(self) -> None:
         self.__init__()
+
+    def save(self) -> None:
+        os.makedirs(os.path.dirname(_STATS_FILE), exist_ok=True)
+        with open(_STATS_FILE, "w") as f:
+            json.dump({
+                "response_times": self.response_times,
+                "response_words": self.response_words,
+                "user_words": self.user_words,
+                "code_blocks": self.code_blocks,
+                "all_response_words": self.all_response_words,
+                "questions_asked": self.questions_asked,
+            }, f)
+
+    @classmethod
+    def load(cls) -> "ConvoStats":
+        stats = cls()
+        try:
+            with open(_STATS_FILE) as f:
+                data = json.load(f)
+            stats.response_times = data.get("response_times", [])
+            stats.response_words = data.get("response_words", [])
+            stats.user_words = data.get("user_words", [])
+            stats.code_blocks = data.get("code_blocks", 0)
+            stats.all_response_words = data.get("all_response_words", [])
+            stats.questions_asked = data.get("questions_asked", 0)
+        except (FileNotFoundError, json.JSONDecodeError):
+            pass
+        return stats
 
     def compute(self, turns: int) -> list[_StatRow]:
         def scale(val: float, lo: float, hi: float) -> int:
